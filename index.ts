@@ -54,7 +54,7 @@ app.route({
             const result = col.insert(fileDetails);
 
             db.saveDatabase();
-            reply({ id: result.$loki, fileName: result.filename });
+            reply({ id: result.$loki, fileName: result.filename, originalName: result.originalname });
         } catch (err) {
             reply(Boom.badRequest(err.message, err));
         }
@@ -80,7 +80,7 @@ app.route({
             const result = [].concat(col.insert(filesDetails));
 
             db.saveDatabase();
-            reply(result.map(x => ({ id: x.$loki, fileName: x.filename })));
+            reply(result.map(x => ({ id: x.$loki, fileName: x.filename, originalName: x.originalname })));
         } catch (err) {
             reply(Boom.badRequest(err.message, err));
         }
