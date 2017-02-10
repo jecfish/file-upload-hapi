@@ -25,22 +25,13 @@ const cleanFolder = function (folderPath) {
     del.sync([`${folderPath}/**`, `!${folderPath}`]);
 };
 
-interface FileUploaderOption {
-    dest: string;
-    fileFilter?();
+const uploader = function (file: any, options: FileUploaderOption) {
+    if (!file) throw new Error('no file(s)');
+
+    return Array.isArray(file) ? _filesHandler(file, options) : _fileHandler(file, options);
 }
 
-interface File {
-    fieldname: string;
-    originalname: string;
-    filename: string;
-    mimetype: string;
-    destination: string;
-    path: string;
-    size: number;
-}
-
-const fileUploader = function (file: any, options: FileUploaderOption) {
+const _fileHandler = function (file: any, options: FileUploaderOption) {
     if (!file) throw new Error('no file');
 
     const orignalname = file.hapi.filename;
@@ -56,7 +47,7 @@ const fileUploader = function (file: any, options: FileUploaderOption) {
         file.pipe(fileStream);
 
         file.on('end', function (err) {
-            const fileDetails: File = {
+            const fileDetails: FileDetails = {
                 fieldname: file.hapi.name,
                 originalname: file.hapi.filename,
                 filename,
@@ -71,12 +62,11 @@ const fileUploader = function (file: any, options: FileUploaderOption) {
     })
 }
 
-const filesUploader = function (files: any[], options: FileUploaderOption) {
+const _filesHandler = function (files: any[], options: FileUploaderOption) {
     if (!files || !Array.isArray(files)) throw new Error('no files');
 
-    const promises = files.map(x => fileUploader(x, options));
-
+    const promises = files.map(x => _fileHandler(x, options));
     return Promise.all(promises);
 }
 
-export { imageFilter, loadCollection, cleanFolder, fileUploader }
+export { imageFilter, loadCollection, cleanFolder, uploader }

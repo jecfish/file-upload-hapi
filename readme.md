@@ -7,7 +7,7 @@
 
 ## API End Points
 
-1. Upload an image via `localhost:3000/profile`, avatar field.
-2. Bulk Upload images via `localhost:3000/photos/upload`, photos field.
-3. View list of images via `localhost:3000/images`.
-4. Get a single image via `localhost:3000/images/{imageId}`.
+1. Upload an image via `localhost:3001/profile`, avatar field.
+2. Bulk Upload images via `localhost:3001/photos/upload`, photos field.
+3. View list of images via `localhost:3001/images`.
+4. Get a single image via `localhost:3001/images/{imageId}`.
