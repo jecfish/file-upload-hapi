@@ -77,7 +77,7 @@ app.route({
 
             const filesDetails = await uploader(files, fileOptions);
             const col = await loadCollection(COLLECTION_NAME, db);
-            const result = col.insert(filesDetails);
+            const result = [].concat(col.insert(filesDetails));
 
             db.saveDatabase();
             reply(result.map(x => ({ id: x.$loki, fileName: x.filename })));
