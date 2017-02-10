@@ -1,63 +1,139 @@
-import * as fs from 'fs'
+import * as Hapi from 'hapi';
+import * as Boom from 'boom';
 import * as path from 'path'
-import * as Loki from 'lokijs'
-import { imageFilter, loadCollection, cleanFolder } from './utils';
+import * as fs from 'fs';
+import * as Loki from 'lokijs';
+import * as uuid from 'uuid';
+import { imageFilter, loadCollection, cleanFolder, fileUploader } from './utils';
 
 // setup
 const DB_NAME = 'db.json';
 const COLLECTION_NAME = 'images';
 const UPLOAD_PATH = 'uploads';
-const upload = multer({ dest: `${UPLOAD_PATH}/`, fileFilter: imageFilter });
+const fileOptions = { dest: `${UPLOAD_PATH}/` };
 const db = new Loki(`${UPLOAD_PATH}/${DB_NAME}`, { persistenceMethod: 'fs' });
 
 // optional: clean all data before start
 cleanFolder(UPLOAD_PATH);
+if (!fs.existsSync(UPLOAD_PATH)) fs.mkdirSync(UPLOAD_PATH);
 
 // app
-const app = express();
-app.use(cors());
+const server = new Hapi.Server();
+server.connection({ port: 3001, host: 'localhost' });
 
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-})
+server.start((err) => {
 
-app.post('/profile', upload.single('avatar'), async (req, res) => {
-    const col = await loadCollection(COLLECTION_NAME, db);
-    const data = col.insert(req.file);
+    if (err) {
+        throw err;
+    }
+    console.log(`Server running at: ${server.info.uri}`);
+});
 
-    db.saveDatabase();
-    res.send({ id: data.$loki, fileName: data.filename });
-})
+server.route({
+    method: 'GET',
+    path: '/',
+    handler: function (request, reply) {
+        reply('Hello, world!');
+    }
+});
 
-app.post('/photos/upload', upload.array('photos', 12), async (req, res) => {
-    const col = await loadCollection(COLLECTION_NAME, db)
-    let data = [];
+server.route({
+    method: 'POST',
+    path: '/profile',
+    config: {
+        payload: {
+            output: 'stream',
+            // parse: true,
+            allow: 'multipart/form-data'
+        }
+    },
+    handler: async function (request, reply) {
+        const data = request.payload;
+        const file = data['avatar'];
 
-    (req.files as any).forEach(x => {
-        data = data.concat(col.insert(x));
+        const fileDetails = await fileUploader(file, fileOptions);
+        const col = await loadCollection(COLLECTION_NAME, db);
+        const result = col.insert(fileDetails);
+
         db.saveDatabase();
-    })
-    res.send(data.map(x => ({ id: x.$loki, fileName: x.filename })));
-})
+        reply(result);
+    }
+});
 
-app.get('/images', async (req, res) => {
-    const col = await loadCollection(COLLECTION_NAME, db);
+server.route({
+    method: 'POST',
+    path: '/photos/upload',
+    config: {
 
-    res.send(col.data);
-})
+        payload: {
+            output: 'stream',
+            // parse: true,
+            allow: 'multipart/form-data'
+        },
 
-app.get('/images/:id', async (req, res) => {
-    const col = await loadCollection(COLLECTION_NAME, db);
-    const result = col.get(req.params.id);
+        handler: function (request, reply) {
+            const data = request.payload;
+            const files: any[] = data.photos;
+            const details: any[] = [];
+            files.forEach(file => {
+                if (file) {
+                    const orignalname = file.hapi.filename;
+                    const filename = uuid.v1();
+                    const path = `${UPLOAD_PATH}/${filename}`;
+                    const fileStream = fs.createWriteStream(path);
 
-    if (!result) {
-        res.sendStatus(404);
-        return;
-    };
-    res.setHeader('Content-Type', result.mimetype);
-    fs.createReadStream(path.join(UPLOAD_PATH, result.filename)).pipe(res);
-})
+                    fileStream.on('error', function (err) {
+                        console.error(err)
+                    });
 
-app.listen(3000, function () {
-    console.log('listening on port 3000!');
-})
+                    file.pipe(fileStream);
+
+                    file.on('end', function (err) {
+                        const fileDetails = {
+                            fieldname: file.hapi.name,
+                            originalname: file.hapi.filename,
+                            filename,
+                            mimetype: file.hapi.headers['content-type'],
+                            destinatiion: `${UPLOAD_PATH}/`,
+                            path,
+                            size: fs.statSync(path).size,
+                        }
+
+                        loadCollection(COLLECTION_NAME, db).then(col => {
+                            const r = col.insert(fileDetails);
+                            db.saveDatabase();
+                            details.push(r);
+                            if (details.length === files.length) reply(details)
+                        })
+                    })
+                }
+            });
+        }
+    }
+});
+
+server.route({
+    method: 'GET',
+    path: '/images',
+    handler: function (request, reply) {
+        loadCollection(COLLECTION_NAME, db)
+            .then(col => reply(col.data));
+    }
+});
+
+server.route({
+    method: 'GET',
+    path: '/images/{id}',
+    handler: async function (request, reply) {
+        const col = await loadCollection(COLLECTION_NAME, db)
+        const result = col.get(request.params['id']);
+
+        if (!result) {
+            reply(Boom.notFound());
+            return;
+        };
+
+        reply(fs.createReadStream(path.join(UPLOAD_PATH, result.filename)))
+            .header('Content-Type', result.mimetype);
+    }
+});

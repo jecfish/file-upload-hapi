@@ -8,14 +8,18 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@types/hapi": "^16.0.0",
+    "boom": "^4.2.0",
     "del": "^2.2.2",
     "hapi": "^16.1.0",
-    "lokijs": "^1.4.2"
+    "lokijs": "^1.4.2",
+    "uuid": "^3.0.1"
   },
   "devDependencies": {
+    "@types/boom": "^0.0.33",
     "@types/del": "^2.2.32",
+    "@types/hapi": "^16.0.0",
     "@types/lokijs": "^1.2.30",
+    "@types/uuid": "^2.0.29",
     "typescript": "^2.1.6"
   }
 }

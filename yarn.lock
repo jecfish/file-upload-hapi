@@ -2,6 +2,12 @@
 # yarn lockfile v1
 
 
+"@types/boom@^0.0.33":
+  version "0.0.33"
+  resolved "https://registry.yarnpkg.com/@types/boom/-/boom-0.0.33.tgz#5fffdd8a2f430d9e85e664bb1abaa3932b6a4295"
+  dependencies:
+    "@types/node" "*"
+
 "@types/del@^2.2.32":
   version "2.2.32"
   resolved "https://registry.yarnpkg.com/@types/del/-/del-2.2.32.tgz#4d54df0ed3017435e6b1995df0292957787fc6b2"
@@ -32,6 +38,12 @@
 "@types/node@*":
   version "7.0.5"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-7.0.5.tgz#96a0f0a618b7b606f1ec547403c00650210bfbb7"
+
+"@types/uuid@^2.0.29":
+  version "2.0.29"
+  resolved "https://registry.yarnpkg.com/@types/uuid/-/uuid-2.0.29.tgz#939a198ab73567f811ab84f670d2be9c25addd41"
+  dependencies:
+    "@types/node" "*"
 
 accept@2.x.x:
   version "2.1.3"
@@ -69,7 +81,7 @@ balanced-match@^0.4.1:
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-0.4.2.tgz#cb3f3e3c732dc0f01ee70b403f302e61d7709838"
 
-boom@4.x.x:
+boom@4.x.x, boom@^4.2.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/boom/-/boom-4.2.0.tgz#c1a74174b11fbba223f6162d4fd8851a1b82a536"
   dependencies:
@@ -365,6 +377,10 @@ topo@2.x.x:
 typescript@^2.1.6:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.2.0.tgz#626f2fc70087d2480f21ebb12c1888288c8614e3"
+
+uuid@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.0.1.tgz#6544bba2dfda8c1cf17e629a3a305e2bb1fee6c1"
 
 vise@2.x.x:
   version "2.0.2"
