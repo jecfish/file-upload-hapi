@@ -22,9 +22,9 @@ if (!fs.existsSync(UPLOAD_PATH)) fs.mkdirSync(UPLOAD_PATH);
 
 // app
 const app = new Hapi.Server();
-app.connection({ 
-    port: 3001, host: 'localhost', 
-    routes: { cors: true } 
+app.connection({
+    port: 3001, host: 'localhost',
+    routes: { cors: true }
 });
 
 app.start((err) => {
@@ -45,15 +45,19 @@ app.route({
         }
     },
     handler: async function (request, reply) {
-        const data = request.payload;
-        const file = data['avatar'];
+        try {
+            const data = request.payload;
+            const file = data['avatar'];
 
-        const fileDetails = await uploader(file, fileOptions);
-        const col = await loadCollection(COLLECTION_NAME, db);
-        const result = col.insert(fileDetails);
+            const fileDetails = await uploader(file, fileOptions);
+            const col = await loadCollection(COLLECTION_NAME, db);
+            const result = col.insert(fileDetails);
 
-        db.saveDatabase();
-        reply({ id: result.$loki, fileName: result.filename });
+            db.saveDatabase();
+            reply({ id: result.$loki, fileName: result.filename });
+        } catch (err) {
+            reply(Boom.badRequest(err.message, err));
+        }
     }
 });
 
@@ -67,24 +71,32 @@ app.route({
         }
     },
     handler: async function (request, reply) {
-        const data = request.payload;
-        const files = data['photos'];
+        try {
+            const data = request.payload;
+            const files = data['photos'];
 
-        const filesDetails = await uploader(files, fileOptions);
-        const col = await loadCollection(COLLECTION_NAME, db);
-        const result = col.insert(filesDetails);
+            const filesDetails = await uploader(files, fileOptions);
+            const col = await loadCollection(COLLECTION_NAME, db);
+            const result = col.insert(filesDetails);
 
-        db.saveDatabase();
-        reply(result.map(x => ({ id: x.$loki, fileName: x.filename })));
+            db.saveDatabase();
+            reply(result.map(x => ({ id: x.$loki, fileName: x.filename })));
+        } catch (err) {
+            reply(Boom.badRequest(err.message, err));
+        }
     }
 });
 
 app.route({
     method: 'GET',
     path: '/images',
-    handler: function (request, reply) {
-        loadCollection(COLLECTION_NAME, db)
-            .then(col => reply(col.data));
+    handler: async function (request, reply) {
+        try {
+            const col = await loadCollection(COLLECTION_NAME, db)
+            reply(col.data);
+        } catch (err) {
+            reply(Boom.badRequest(err.message, err));
+        }
     }
 });
 
@@ -92,15 +104,19 @@ app.route({
     method: 'GET',
     path: '/images/{id}',
     handler: async function (request, reply) {
-        const col = await loadCollection(COLLECTION_NAME, db)
-        const result = col.get(request.params['id']);
+        try {
+            const col = await loadCollection(COLLECTION_NAME, db)
+            const result = col.get(request.params['id']);
 
-        if (!result) {
-            reply(Boom.notFound());
-            return;
-        };
+            if (!result) {
+                reply(Boom.notFound());
+                return;
+            };
 
-        reply(fs.createReadStream(path.join(UPLOAD_PATH, result.filename)))
-            .header('Content-Type', result.mimetype);
+            reply(fs.createReadStream(path.join(UPLOAD_PATH, result.filename)))
+                .header('Content-Type', result.mimetype);
+        } catch (err) {
+            reply(Boom.badRequest(err.message, err));
+        }
     }
 });
