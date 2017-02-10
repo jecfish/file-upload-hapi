@@ -3,7 +3,7 @@ import * as Boom from 'boom';
 import * as path from 'path'
 import * as fs from 'fs';
 import * as Loki from 'lokijs';
-import * as uuid from 'uuid';
+
 import {
     imageFilter, loadCollection, cleanFolder,
     uploader
