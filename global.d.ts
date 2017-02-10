@@ -1,6 +1,6 @@
 interface FileUploaderOption {
     dest: string;
-    fileFilter?();
+    fileFilter?(fileName: string): boolean;
 }
 
 interface FileDetails {

@@ -13,7 +13,7 @@ import {
 const DB_NAME = 'db.json';
 const COLLECTION_NAME = 'images';
 const UPLOAD_PATH = 'uploads';
-const fileOptions: FileUploaderOption = { dest: `${UPLOAD_PATH}/` };
+const fileOptions: FileUploaderOption = { dest: `${UPLOAD_PATH}/`, fileFilter: imageFilter };
 const db = new Loki(`${UPLOAD_PATH}/${DB_NAME}`, { persistenceMethod: 'fs' });
 
 // optional: clean all data before start

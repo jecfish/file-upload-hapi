@@ -3,12 +3,13 @@ import * as Loki from 'lokijs';
 import * as fs from 'fs';
 import * as uuid from 'uuid';
 
-const imageFilter = function (req, file, cb) {
+const imageFilter = function (fileName: string) {
     // accept image only
-    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-        return cb(new Error('Only image files are allowed!'), false);
+    if (!fileName.match(/\.(jpg|jpeg|png|gif)$/)) {
+        return false;
     }
-    cb(null, true);
+    
+    return true;
 };
 
 const loadCollection = function (colName, db: Loki): Promise<LokiCollection<any>> {
@@ -33,6 +34,10 @@ const uploader = function (file: any, options: FileUploaderOption) {
 
 const _fileHandler = function (file: any, options: FileUploaderOption) {
     if (!file) throw new Error('no file');
+
+    if (options.fileFilter && !options.fileFilter(file.hapi.filename)) {
+        throw new Error('type not allowed');
+    }
 
     const orignalname = file.hapi.filename;
     const filename = uuid.v1();
