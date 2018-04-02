@@ -1,4 +1,4 @@
-import * as Hapi from 'hapi';
+import { Server } from 'hapi';
 import * as Boom from 'boom';
 import * as path from 'path'
 import * as fs from 'fs';
@@ -21,30 +21,24 @@ const db = new Loki(`${UPLOAD_PATH}/${DB_NAME}`, { persistenceMethod: 'fs' });
 if (!fs.existsSync(UPLOAD_PATH)) fs.mkdirSync(UPLOAD_PATH);
 
 // app
-const app = new Hapi.Server();
-app.connection({
-    port: 3001, host: 'localhost',
-    routes: { cors: true }
-});
-
-app.start((err) => {
-
-    if (err) {
-        throw err;
+const app = new Server({
+    port: 3001,
+    host: 'localhost',
+    routes: {
+        cors: true
     }
-    console.log(`Server running at: ${app.info.uri}`);
 });
 
 app.route({
     method: 'POST',
     path: '/profile',
-    config: {
+    options: {
         payload: {
             output: 'stream',
             allow: 'multipart/form-data'
         }
     },
-    handler: async function (request, reply) {
+    handler: async function (request, h) {
         try {
             const data = request.payload;
             const file = data['avatar'];
@@ -54,9 +48,9 @@ app.route({
             const result = col.insert(fileDetails);
 
             db.saveDatabase();
-            reply({ id: result.$loki, fileName: result.filename, originalName: result.originalname });
+            return { id: result.$loki, fileName: result.filename, originalName: result.originalname };
         } catch (err) {
-            reply(Boom.badRequest(err.message, err));
+            return Boom.badRequest(err.message, err);
         }
     }
 });
@@ -64,13 +58,13 @@ app.route({
 app.route({
     method: 'POST',
     path: '/photos/upload',
-    config: {
-        payload: {
+    options: {
+        payload:{
             output: 'stream',
             allow: 'multipart/form-data'
         }
     },
-    handler: async function (request, reply) {
+    handler: async (request, h) => {
         try {
             const data = request.payload;
             const files = data['photos'];
@@ -80,9 +74,9 @@ app.route({
             const result = [].concat(col.insert(filesDetails));
 
             db.saveDatabase();
-            reply(result.map(x => ({ id: x.$loki, fileName: x.filename, originalName: x.originalname })));
+            return result.map(x => ({ id: x.$loki, fileName: x.filename, originalName: x.originalname }));
         } catch (err) {
-            reply(Boom.badRequest(err.message, err));
+            return Boom.badRequest(err.message, err);
         }
     }
 });
@@ -90,12 +84,12 @@ app.route({
 app.route({
     method: 'GET',
     path: '/images',
-    handler: async function (request, reply) {
+    handler: async (request, h) => {
         try {
-            const col = await loadCollection(COLLECTION_NAME, db)
-            reply(col.data);
+            const col = await loadCollection(COLLECTION_NAME, db);
+            return col.data;
         } catch (err) {
-            reply(Boom.badRequest(err.message, err));
+            return Boom.badRequest(err.message, err);
         }
     }
 });
@@ -103,20 +97,31 @@ app.route({
 app.route({
     method: 'GET',
     path: '/images/{id}',
-    handler: async function (request, reply) {
+    handler: async (request, h) => {
         try {
             const col = await loadCollection(COLLECTION_NAME, db)
-            const result = col.get(request.params['id']);
+            const result = col.get(+request.params['id']);
 
             if (!result) {
-                reply(Boom.notFound());
-                return;
+                return Boom.notFound();
             };
 
-            reply(fs.createReadStream(path.join(UPLOAD_PATH, result.filename)))
-                .header('Content-Type', result.mimetype);
+            return fs.createReadStream(path.join(UPLOAD_PATH, result.filename));
         } catch (err) {
-            reply(Boom.badRequest(err.message, err));
+            return Boom.badRequest(err.message, err);
         }
     }
 });
+
+const init = async () => {
+    await app.start();
+    console.log(`Server running at: ${app.info.uri}`);
+};
+
+process.on('unhandledRejection', (err) => {
+
+    console.log(err);
+    process.exit(1);
+});
+
+init();
